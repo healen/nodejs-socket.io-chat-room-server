@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black">
+        <meta name="format-detection" content="telephone=no">
+        
+	<title>聊天室</title>
+	<style type="text/css">
+	body{
+		overflow: hidden;
+	}
+
+	.msglist{
+		display: none;
+	}
+	.msglist{
+		border:1px solid #ccc;
+	}
+	#usernamelist{
+		
+		font-size: 12px;
+		margin-top: 10px;
+		margin-bottom: 10px;
+		/*display: none;*/
+	}
+	#usernamelist ul{
+		margin: 0px;
+		padding: 0px;
+		padding-left: 10px;
+		padding-top: 10px;
+		list-style-type: none;
+	}
+	#usernamelist ul li{
+		float:left;
+		margin-right: 20px;
+	}
+	.clear{
+		clear: both;
+		height: 0px;
+		overflow: hidden;
+		display: block;
+	}
+	.content{
+		width: 100%;
+		float: left;
+		
+		overflow: hidden;
+		
+	}
+	.incontent{
+		height: 28%;
+		overflow: auto;
+		border-bottom:1px solid #ccc;
+		height: 100px;
+	}
+	.isg{
+		padding:0px 10px;
+		font-size: 12px;
+	}
+	#sendtext{
+		width: 60%;
+		height: 30px;
+		padding: 10px;
+		border: none;
+		float: left;
+
+	}
+	#sendbtn{
+		height: 50px;
+		float: left;
+		width: 33%;
+	}
+	#Nickname{
+		border:1px solid #ccc;
+	}
+	</style>
+</head>
+<body>
+	
+
+	<form id="set-nickname">
+		<label for="Nickname">昵称</label>
+		<input type="text" id="Nickname" />
+		<input type="submit" value="加入聊天" />
+	</form>
+
+	<div id="usernamelist">
+			<ul>
+				<li></li>
+			</ul>
+			<div class="clear"></div>
+		</div>
+
+
+	<div class="msglist">
+		<div class="content">
+			<div class="incontent">
+				<div class="isg">
+				</div>
+			</div>
+			<form id="sendmsg">
+				<textarea id="sendtext" placeholder="请输入聊天内容"></textarea>
+				<input type="submit" id="sendbtn" value="发送">
+				<div class="clear"></div>
+			</form>
+			
+		</div>
+		
+		<div class="clear"></div>
+		
+	</div>
+	
+	<script type="text/javascript" src="/socket.io/socket.io.js"></script>
+	<script type="text/javascript" src="http://libs.baidu.com/jquery/1.9.0/jquery.js"></script>
+	
+	<script type="text/javascript">
+
+
+	var socket=io.connect("http://10.8.8.110:3002");
+
+	$(function(){
+
+		$(".incontent").css({
+			height:$(window).height()-150+"px"
+		})
+
+		$("#sendtext").focus(function(){
+
+			$(".incontent").css({
+				height:$(window).height()-150+"px"
+			})
+		})
+		var setNickname=$("#set-nickname");
+		var nickname=$("#Nickname");
+		var msg=$(".msglist")
+		var usernamelist=$("#usernamelist ul");
+		var sendtext=$("#sendtext");
+		var sendbtn=$("#sendbtn");
+		var incontent=$(".incontent");
+
+
+		setNickname.submit(function(e){
+			e.preventDefault();
+			/*把用户名发送给服务器，*/
+			socket.emit("nickname",nickname.val(),function(data){
+				if(data){
+					console.log('用户名设置成功！');
+					setNickname.hide();
+					msg.show();
+				}else{
+					alert("用户名已存在")
+				}
+			});
+
+			/*接收服务器发送活来的用户名*/
+			socket.on("nicknames",function(data){
+				console.log(data);
+				var usernameStr=""
+				for(var i=0;i<data.length;i++){
+					usernameStr+="<li>"+data[i]+"</li>";
+				}
+				usernamelist.empty().append(usernameStr);
+			})
+		})
+
+
+		$("#sendmsg").submit(function(e){
+			e.preventDefault();
+			socket.emit("sendmsg",sendtext.val());//给服务器发送消息
+			sendtext.val("").focus();
+			
+		})
+
+		socket.on('use msg',function(data){//接收服务器传递过来的消息
+			$(".incontent").animate({
+				scrollTop:$(".incontent .isg").height()
+			})
+			incontent.find(".isg").append("<p><b>"+data.nick+":</b>"+data.mes+"</p>");
+			sendtext.blur();
+		})
+
+
+	})
+
+ 		document.onkeydown=function(event){
+            var e = event || window.event || arguments.callee.caller.arguments[0];            
+             if(e && e.keyCode==13){ // enter 键
+                $("#sendmsg").submit();
+            }
+        }; 
+
+	</script>
+</body>
+</html>
